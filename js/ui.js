@@ -43,7 +43,7 @@ G.UI = (function () {
   function showOver(result) {
     el.overScore.textContent = result.score;
     el.overNew.classList.toggle('hidden', !result.newBest);
-    el.overDetail.textContent = `생존 ${result.time.toFixed(1)}초 · 보너스 ${result.bonus}`;
+    el.overDetail.textContent = `생존 ${result.time.toFixed(1)}초 · 처치 점수 ${result.bonus}`;
     el.overBest.textContent = `최고 기록 ${result.best}`;
     el.over.classList.remove('hidden');
   }

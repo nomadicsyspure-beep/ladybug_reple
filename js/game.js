@@ -2,7 +2,6 @@
 G.Game = (function () {
   const W = G.CONFIG.world.width;
   const H = G.CONFIG.world.height;
-  const S = G.CONFIG.score;
 
   const DEATH_SLOWMO = 0.25; // 죽는 순간 느려지는 정도
   const DEATH_DELAY = 0.75; // 죽고 나서 게임 오버 화면이 뜨기까지 (실제 시간)
@@ -11,8 +10,10 @@ G.Game = (function () {
   const state = {
     mode: 'title', // 'title' | 'playing' | 'dying' | 'over'
     time: 0,
-    bonus: 0,
+    secondClock: 0, // 1초마다 생존 점수를 주기 위한 시계
+    bonus: 0, // 처치로 얻은 점수 (게임 오버 화면 표시용)
     score: 0,
+    wave: 0, // 현재 점수 단계
     best: 0,
     newBest: false,
     timer: 0,
@@ -35,8 +36,10 @@ G.Game = (function () {
 
     state.mode = 'playing';
     state.time = 0;
+    state.secondClock = 0;
     state.bonus = 0;
     state.score = 0;
+    state.wave = 0;
     state.newBest = false;
     state.danger = 0;
     state.player = G.Player.create();
@@ -65,6 +68,15 @@ G.Game = (function () {
     }
   }
 
+  function addScore(points) {
+    state.score += points;
+    const wave = G.waveIndexFor(state.score);
+    if (wave > state.wave) {
+      state.wave = wave;
+      G.Effects.text(W / 2, H * 0.4, `${wave + 1}단계`, '#ffd23f', 30);
+    }
+  }
+
   function update(dt) {
     state.clock += dt;
 
@@ -77,12 +89,21 @@ G.Game = (function () {
         state.time += dt;
         const p = state.player;
         G.Player.update(p, dt);
-        const surroundStarted = G.Enemies.updateSpawning(dt, state.time, p);
-        G.Enemies.update(dt, p);
-        state.bonus += G.Items.update(dt, state.time, p, surroundStarted);
-        state.score = Math.floor(state.time * S.perSecond) + state.bonus;
 
-        const target = Math.min(1, G.Enemies.countNear(p.x, p.y, 95) / 5);
+        // 1초 버틸 때마다 현재 단계의 생존 점수
+        state.secondClock += dt;
+        while (state.secondClock >= 1) {
+          state.secondClock -= 1;
+          addScore(G.WAVES[state.wave].time);
+        }
+
+        G.Enemies.updateSpawning(dt, state.score, p);
+        G.Enemies.update(dt);
+        const killScore = G.Items.update(dt, state.score, p);
+        state.bonus += killScore;
+        addScore(killScore);
+
+        const target = Math.min(1, G.Enemies.countNear(p.x, p.y, 110) / 6);
         state.danger += (target - state.danger) * Math.min(1, dt * 6);
 
         const hit = G.Enemies.hits(p);
@@ -92,7 +113,7 @@ G.Game = (function () {
       }
 
       case 'dying':
-        G.Enemies.update(dt * DEATH_SLOWMO, null);
+        G.Enemies.update(dt * DEATH_SLOWMO);
         G.Effects.update(dt * 0.6);
         state.danger = Math.max(0, state.danger - dt * 2);
         state.timer -= dt;
@@ -111,7 +132,7 @@ G.Game = (function () {
 
       case 'over':
         state.timer -= dt;
-        G.Enemies.update(dt * 0.5, null);
+        G.Enemies.update(dt * 0.5);
         G.Effects.update(dt);
         break;
     }
@@ -128,7 +149,7 @@ G.Game = (function () {
     G.Enemies.draw(ctx, t);
     if (state.mode === 'title' || state.mode === 'playing') G.Player.draw(ctx, state.player, t);
     G.Effects.draw(ctx);
-    G.Enemies.drawWarnings(ctx, t);
+    G.Enemies.drawWarnings(ctx);
     G.View.drawDanger(ctx, state.danger);
     G.Effects.drawFlash(ctx, W, H);
     G.View.end();

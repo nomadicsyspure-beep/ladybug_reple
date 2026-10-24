@@ -63,7 +63,9 @@ G.Player = (function () {
     if (p.blink < -G.rand(2, 4)) p.blink = 0.12;
   }
 
+  // 기준 크기 13으로 그린 뒤 실제 크기에 맞게 확대한다
   function draw(ctx, p, time) {
+    const r = 13;
     const fl = Math.hypot(p.faceX, p.faceY) || 1;
     const fx = p.faceX / fl;
     const fy = p.faceY / fl;
@@ -72,11 +74,12 @@ G.Player = (function () {
 
     ctx.save();
     ctx.translate(p.x, p.y + bob);
+    ctx.scale(p.r / r, p.r / r);
 
     // 그림자
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.beginPath();
-    ctx.ellipse(0, p.r * 0.85, p.r * 0.85, p.r * 0.3, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, r * 0.85, r * 0.85, r * 0.3, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // 더듬이
@@ -86,12 +89,12 @@ G.Player = (function () {
     for (const side of [-1, 1]) {
       const sway = Math.sin(time * 8 + side) * 1.5;
       ctx.beginPath();
-      ctx.moveTo(side * 4, -p.r * 0.8);
-      ctx.quadraticCurveTo(side * 7, -p.r * 1.35, side * 9 + sway, -p.r * 1.45);
+      ctx.moveTo(side * 4, -r * 0.8);
+      ctx.quadraticCurveTo(side * 7, -r * 1.35, side * 9 + sway, -r * 1.45);
       ctx.stroke();
       ctx.fillStyle = '#ff9db5';
       ctx.beginPath();
-      ctx.arc(side * 9 + sway, -p.r * 1.45, 2.4, 0, Math.PI * 2);
+      ctx.arc(side * 9 + sway, -r * 1.45, 2.4, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -103,7 +106,7 @@ G.Player = (function () {
     ctx.strokeStyle = '#c99a00';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
